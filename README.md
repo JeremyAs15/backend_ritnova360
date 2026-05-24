@@ -43,18 +43,24 @@ pip install -r requirements.txt
 ## Usuarios disponibles
 Usuarios listos creados desde el backend para experimentación con el programa.
 
+---
+
 **Superusuario**
+
     correo: admin@gmail.com
     password: 1234
 
 **Director**
+
     correo: director.juan@ritnova360.com
     password: Password123
 
 **Profesor de Danza**
+
     correo: profesor.carlos@ritnova360.com
     password: Password123
 
 **Estudiante**
+
     correo: estudiante.pedro@correo.com
     password: Password123
