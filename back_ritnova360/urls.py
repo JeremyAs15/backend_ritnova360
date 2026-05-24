@@ -16,7 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Endpoints para el módulo de usuarios y autenticación
+    path('api/users/', include('users.urls')),
+    
+    # Endpoints para el catálogo, carrito y compras
+    path('api/academy/', include('academy.urls')),
 ]

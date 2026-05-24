@@ -4,6 +4,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 # --- COREOGRAFÍA ---
 class Choreography(models.Model):
+    """
+    Representa el catálogo principal de las coreografías disponibles en la academia.
+    Almacena los metadatos de la canción, nivel de dificultad y costo del paquete de videos.
+    """
     choreography_id = models.AutoField(primary_key=True)
     song_name = models.CharField('Nombre de la canción', max_length=255)
     genre = models.CharField('Género musical', max_length=100)
@@ -32,6 +36,10 @@ class Choreography(models.Model):
 
 # --- CLIP DE VIDEO ---
 class VideoClip(models.Model):
+    """
+    Secciones de video individuales que componen el paso a paso de una coreografía.
+    Establece una relación de uno a muchos (1:N) con Coreografía.
+    """
     clip_id = models.AutoField(primary_key=True)
     
     # Relación: Muchos video clips pertenecen a una sola coreografía (1 a N).
@@ -57,6 +65,10 @@ class VideoClip(models.Model):
 
 # --- CALIFICACIONES (RATE) ---
 class Rate(models.Model):
+    """
+    Almacena las puntuaciones y reseñas numéricas (1 a 5 estrellas) hechas por estudiantes.
+    Restringe a que cada estudiante califique una coreografía como máximo una vez.
+    """
     # Relaciones intermedias
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -91,6 +103,10 @@ class Rate(models.Model):
 
 # --- INSCRIPCIÓN (ENROLL) ---
 class Enroll(models.Model):
+    """
+    Asociación de acceso de los estudiantes a las coreografías compradas.
+    Permite abrir y validar los permisos de reproducción de los videos en la plataforma.
+    """
     STATES = [
         ('active', 'Activo'),
         ('inactive', 'Inactivo'),
@@ -123,6 +139,10 @@ class Enroll(models.Model):
 
 # --- CARRITO DE COMPRAS ---
 class ShoppingCart(models.Model):
+    """
+    Representa el carrito de compras del usuario.
+    Mantiene un estado para determinar si está activo, pagado o anulado.
+    """
     STATES = [
         ('pending', 'Pendiente'),
         ('completed', 'Completado'),
@@ -149,6 +169,10 @@ class ShoppingCart(models.Model):
 
 # --- ELEMENTOS AGREGADOS AL CARRITO (ADD_TO) ---
 class AddTo(models.Model):
+    """
+    Detalle de los artículos (Coreografías) vinculados a un carrito de compras.
+    Almacena el precio histórico en el momento en que se añade al carrito.
+    """
     STATES = [
         ('active', 'Activo'),
         ('refunded', 'Reembolsado'),
