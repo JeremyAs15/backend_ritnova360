@@ -2,7 +2,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 class CustomUserManager(BaseUserManager):
-
+    """
+    Gestor personalizado para el modelo de usuario donde el correo electrónico
+    es el identificador único para la autenticación en lugar de un nombre de usuario.
+    """
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('El correo electrónico es obligatorio.')
@@ -20,6 +23,10 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractUser):
+    """
+    Modelo de usuario personalizado para la gestión de miembros de la academia.
+    Soporta roles internos (director, administrador, profesor) y externos (estudiante).
+    """
     # Desactivamos el campo username por defecto de Django
     username = None
     
