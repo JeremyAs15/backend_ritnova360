@@ -29,7 +29,12 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,10.0.2.2').split(',')
+ALLOWED_HOSTS = [
+    'localhost', 
+    '127.0.0.1', 
+    '10.0.2.2', 
+    'backend-ritnova360.onrender.com'  # <--- Agrega exactamente esta URL
+]
 
 
 # Application definition
