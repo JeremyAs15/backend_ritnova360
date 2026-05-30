@@ -48,7 +48,7 @@ Usuarios listos creados desde el backend para experimentación con el programa.
 **Superusuario**
 
     correo: admin@gmail.com
-    password: 1234
+    password: ritnova1234
 
 **Director**
 
