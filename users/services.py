@@ -1,6 +1,11 @@
 from django.db import transaction
 from django.core.exceptions import PermissionDenied, ValidationError
 from .models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
 
 class UserService:
     """
@@ -81,3 +86,59 @@ class UserService:
             raise ValidationError("Para gestionar la baja de clientes utilice el módulo de gestión de clientes.")
 
         user_to_delete.delete()
+    
+    @staticmethod
+    def request_password_reset(email: str) -> None:
+        """
+        Genera un token de recuperación único y envía un correo con el enlace.
+        Para evitar ataques de enumeración de usuarios, si el correo no existe,
+        el servicio finaliza de forma silenciosa sin revelar la existencia de la cuenta.
+        """
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return  # Finalización silenciosa
+
+        # Generación de parámetros seguros de recuperación
+        token = default_token_generator.make_token(user)
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+
+        # Enlace simulado que apuntaría a la interfaz del frontend (React/Vue)
+        # Ejemplo: http://localhost:3000/reset-password?uid=XYZ&token=ABC
+        reset_link = f"http://localhost:3000/reset-password?uid={uidb64}&token={token}"
+
+        subject = "Recuperación de contraseña - Ritnova360"
+        message = (
+            f"Hola {user.first_name or 'Usuario'},\n\n"
+            f"Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Ritnova360.\n"
+            f"Por favor, haz clic en el siguiente enlace para definir una nueva contraseña:\n\n"
+            f"{reset_link}\n\n"
+            f"Este enlace es de uso único. Si no solicitaste este cambio, puedes ignorar este correo."
+        )
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+
+    @staticmethod
+    def confirm_password_reset(uidb64: str, token: str, new_password: str) -> None:
+        """
+        Valida el token y el ID codificado. Si son correctos, actualiza la contraseña del usuario.
+        """
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise ValidationError("El enlace de recuperación no es válido o ha expirado.")
+
+        # Verificar validez matemática del token provisto
+        if not default_token_generator.check_token(user, token):
+            raise ValidationError("El token de recuperación no es válido, ha expirado o ya fue utilizado.")
+
+        with transaction.atomic():
+            user.set_password(new_password)
+            user.save()

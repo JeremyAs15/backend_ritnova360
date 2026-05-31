@@ -5,7 +5,7 @@ from rest_framework import status, permissions
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404
 from .models import User
-from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer
+from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer 
 from .services import UserService
 
 class StudentRegistrationView(APIView):
@@ -105,6 +105,55 @@ class UserDetailView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except PermissionDenied as e:
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PasswordResetRequestView(APIView):
+    """
+    Endpoint para solicitar la recuperación de contraseña.
+    Acceso: Público.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email = serializer.validated_data['email']
+        try:
+            UserService.request_password_reset(email)
+            # Retornamos un mensaje genérico por seguridad para evitar enumeración de cuentas
+            return Response(
+                {"detail": "Si el correo electrónico coincide con una cuenta activa, se ha enviado un mensaje con las instrucciones."},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    Endpoint para confirmar el cambio de contraseña enviando el token y la nueva clave.
+    Acceso: Público.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        uidb64 = serializer.validated_data['uidb64']
+        token = serializer.validated_data['token']
+        new_password = serializer.validated_data['new_password']
+        
+        try:
+            UserService.confirm_password_reset(uidb64, token, new_password)
+            return Response(
+                {"detail": "La contraseña ha sido restablecida con éxito."},
+                status=status.HTTP_200_OK
+            )
         except ValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:

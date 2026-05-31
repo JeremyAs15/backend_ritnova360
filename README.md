@@ -47,7 +47,7 @@ Usuarios listos creados desde el backend para experimentación con el programa.
 
 **Superusuario**
 
-    correo: admin@gmail.com
+    correo: admin@ritnova360.com
     password: ritnova1234
 
 **Director**
@@ -64,3 +64,9 @@ Usuarios listos creados desde el backend para experimentación con el programa.
 
     correo: estudiante.pedro@correo.com
     password: Password123
+
+## Página disponible en: 
+
+https://backend-ritnova360.onrender.com
+
+
