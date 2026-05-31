@@ -33,6 +33,14 @@ class InternalUserManagementView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
+    # Mapeo de valores de ordenamiento permitidos a campos del modelo
+    ORDERING_FIELDS_MAP = {
+        'name': ['first_name', 'last_name'],
+        '-name': ['-first_name', '-last_name'],
+        'date_joined': ['date_joined'],
+        '-date_joined': ['-date_joined'],
+    }
+
     def get(self, request):
         """
         Listar usuarios internos con soporte para filtros por rol y ciudad.
@@ -51,6 +59,11 @@ class InternalUserManagementView(APIView):
             queryset = queryset.filter(role=role_filter)
         if city_filter:
             queryset = queryset.filter(city__iexact=city_filter)
+
+        # Ordenamiento dinámico (por defecto: nombre ascendente)
+        ordering_param = request.query_params.get('ordering', 'name')
+        order_fields = self.ORDERING_FIELDS_MAP.get(ordering_param, ['first_name', 'last_name'])
+        queryset = queryset.order_by(*order_fields)
 
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
