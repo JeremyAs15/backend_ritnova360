@@ -21,7 +21,10 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
     Serializador para la autoregistración pública de estudiantes.
     """
     password = serializers.CharField(write_only=True, required=True, min_length=6)
-
+    first_name = serializers.CharField(required=True, max_length=150, allow_blank=False)
+    last_name = serializers.CharField(required=True, max_length=150, allow_blank=False)
+    email = serializers.EmailField(required=True)
+    
     class Meta:
         model = User
         fields = [
@@ -31,9 +34,11 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         ]
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        # Normalización a minúsculas y eliminación de espacios laterales
+        normalized_email = value.strip().lower()
+        if User.objects.filter(email__iexact=normalized_email).exists():
             raise serializers.ValidationError("Este correo electrónico ya se encuentra registrado.")
-        return value
+        return normalized_email
 
 
 class InternalUserCreationSerializer(serializers.ModelSerializer):
@@ -41,6 +46,10 @@ class InternalUserCreationSerializer(serializers.ModelSerializer):
     Serializador utilizado por Directores o Administradores para registrar personal interno.
     """
     password = serializers.CharField(write_only=True, required=True, min_length=6)
+    first_name = serializers.CharField(required=True, max_length=150, allow_blank=False)
+    last_name = serializers.CharField(required=True, max_length=150, allow_blank=False)
+    email = serializers.EmailField(required=True)
+    role = serializers.CharField(required=True)
 
     class Meta:
         model = User
@@ -51,14 +60,35 @@ class InternalUserCreationSerializer(serializers.ModelSerializer):
         ]
 
     def validate_role(self, value):
-        if value not in ['admin', 'director', 'teacher']:
-            raise serializers.ValidationError("El rol especificado debe ser interno (admin, director o teacher).")
+        valid_roles = ['admin', 'director', 'teacher']
+        if value not in valid_roles:
+            raise serializers.ValidationError(
+                f"El rol especificado no es válido. Debe ser uno de los siguientes: {', '.join(valid_roles)}."
+            )
         return value
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        normalized_email = value.strip().lower()
+        if User.objects.filter(email__iexact=normalized_email).exists():
             raise serializers.ValidationError("Este correo electrónico ya está registrado.")
-        return value
+        return normalized_email
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializador para validar los datos permitidos en la actualización de perfiles.
+    Evita la alteración del correo y rol por esta vía.
+    """
+    first_name = serializers.CharField(required=False, max_length=150, allow_blank=False)
+    last_name = serializers.CharField(required=False, max_length=150, allow_blank=False)
+
+    class Meta:
+        model = User
+        fields = [
+            'first_name', 'last_name', 'phone_number',
+            'document_type', 'n_documento', 'birth_date', 'genre',
+            'country', 'department', 'city', 'datos_facturacion_default',
+            'teacher_type'
+        ]
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     """
