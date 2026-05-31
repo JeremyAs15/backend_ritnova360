@@ -59,3 +59,18 @@ class InternalUserCreationSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Este correo electrónico ya está registrado.")
         return value
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """
+    Valida que el correo tenga un formato correcto para la solicitud de cambio de clave.
+    """
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Valida los parámetros requeridos para aplicar el cambio físico de contraseña.
+    """
+    uidb64 = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, min_length=6)
