@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import StudentRegistrationView, InternalUserManagementView, UserDetailView
+from .views import StudentRegistrationView, InternalUserManagementView, UserDetailView, PasswordResetRequestView, PasswordResetConfirmView 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
@@ -13,4 +13,8 @@ urlpatterns = [
     path('internal/', InternalUserManagementView.as_view(), name='internal-user-management'),
     # Ruta para el detalle, actualización y eliminación de usuarios por ID
     path('<int:pk>/', UserDetailView.as_view(), name='user-detail'),
+    # Rutas para la recuperación de contraseña
+    path('password-reset/', PasswordResetRequestView.as_view(), name='password-reset-request'),
+    path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
+
 ]
