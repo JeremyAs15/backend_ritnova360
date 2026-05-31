@@ -142,3 +142,11 @@ class UserService:
         with transaction.atomic():
             user.set_password(new_password)
             user.save()
+
+    @staticmethod
+    def get_internal_users():
+        """
+        Recupera de la base de datos los usuarios que tienen rol de 
+        administrador, director o profesor.
+        """
+        return User.objects.filter(role__in=['admin', 'director', 'teacher', 'student'])

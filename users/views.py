@@ -49,7 +49,7 @@ class InternalUserManagementView(APIView):
         if request.user.role not in ['admin', 'director'] and not request.user.is_superuser:
             return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
 
-        queryset = User.objects.exclude(role='student')
+        queryset = UserService.get_internal_users()
         
         # Filtros opcionales
         role_filter = request.query_params.get('role')
