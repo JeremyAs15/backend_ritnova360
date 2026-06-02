@@ -2,11 +2,20 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.pagination import PageNumberPagination 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404
 from .models import User
 from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer 
 from .services import UserService
+
+class UserPagination(PageNumberPagination):
+    """
+    Paginación estándar que limita la respuesta a un máximo de 20 registros.
+    """
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 20
 
 class StudentRegistrationView(APIView):
     """
@@ -51,19 +60,32 @@ class InternalUserManagementView(APIView):
 
         queryset = UserService.get_internal_users()
         
-        # Filtros opcionales
+        # Filtros 
         role_filter = request.query_params.get('role')
         city_filter = request.query_params.get('city')
+        active_filter = request.query_params.get('is_active')
         
         if role_filter:
             queryset = queryset.filter(role=role_filter)
         if city_filter:
             queryset = queryset.filter(city__iexact=city_filter)
+        if active_filter is not None:
+            # Convertimos el string de la URL a booleano (maneja 'true', '1' como True, lo demás False)
+            is_active_bool = active_filter.lower() in ['true', '1', 'yes']
+            queryset = queryset.filter(is_active=is_active_bool)
 
         # Ordenamiento dinámico (por defecto: nombre ascendente)
         ordering_param = request.query_params.get('ordering', 'name')
         order_fields = self.ORDERING_FIELDS_MAP.get(ordering_param, ['first_name', 'last_name'])
         queryset = queryset.order_by(*order_fields)
+        
+        # Paginación        
+        paginator = UserPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
+        
+        if paginated_queryset is not None:
+            serializer = UserSerializer(paginated_queryset, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
