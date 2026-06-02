@@ -149,4 +149,4 @@ class UserService:
         Recupera de la base de datos los usuarios que tienen rol de 
         administrador, director o profesor.
         """
-        return User.objects.filter(role__in=['admin', 'director', 'teacher', 'student'])
+        return User.objects.filter(role__in=['admin', 'director', 'teacher'])

@@ -66,6 +66,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -147,3 +148,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_FROM_EMAIL = 'soporte@ritnova360.com'
+
+# Configuración de CORS para el Frontend
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]

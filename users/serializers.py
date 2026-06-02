@@ -74,3 +74,20 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     uidb64 = serializers.CharField()
     token = serializers.CharField()
     new_password = serializers.CharField(write_only=True, min_length=6)
+
+class StudentRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializador para la autoregistración pública de estudiantes.
+    Adaptado para registro rápido (Solo Nombre, Apellido, Email y Clave).
+    """
+    password = serializers.CharField(write_only=True, required=True, min_length=6)
+
+    class Meta:
+        model = User
+        # Redujimos los fields a estrictamente lo que manda el frontend
+        fields = ['email', 'password', 'first_name', 'last_name']
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Este correo electrónico ya se encuentra registrado.")
+        return value
