@@ -10,15 +10,14 @@ class AcademyService:
     """
 
     @staticmethod
-    def create_choreography(user_creator, data: dict) -> Choreography:
+    def create_choreography(user_creator, serializer: ChoreographySerializer) -> Choreography:
         """
         Verifica que el creador de la coreografía sea un profesor, administrador o director.
         """
         if user_creator.role not in ['teacher', 'admin', 'director'] and not user_creator.is_superuser:
             raise PermissionDenied("Solo el personal docente o administrativo de la academia puede registrar coreografías.")
         
-        data['creator'] = user_creator
-        return ChoreographySerializer().create(validated_data=data)    
+        return serializer.save(creator=user_creator)    
 
     @staticmethod
     def add_choreography_to_cart(user, choreography_id: int) -> AddTo:
