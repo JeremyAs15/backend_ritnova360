@@ -193,15 +193,15 @@ class PasswordResetConfirmView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+            
 class UserDetailView(APIView):
     """
-    Endpoint para el detalle, actualización y borrado físico de usuarios individuales.
+    Endpoint para el detalle, actualización y borrado lógico de usuarios individuales.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
+        user = get_object_or_404(User, pk=pk)  # Validación de existencia (Tarea 3)
         if request.user != user and request.user.role not in ['admin', 'director']:
             return Response({"detail": "Acceso denegado."}, status=status.HTTP_403_FORBIDDEN)
             
@@ -210,13 +210,9 @@ class UserDetailView(APIView):
 
     def put(self, request, pk):
         user_to_update = get_object_or_404(User, pk=pk)
-        
-        # Validamos los datos de entrada usando el serializador de actualización
         serializer = UserUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        
         try:
-            # Enviamos los datos ya validados por el serializador
             updated_user = UserService.update_user_profile(
                 user_to_update, 
                 request.user, 
@@ -230,9 +226,13 @@ class UserDetailView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, pk):
-        user_to_delete = get_object_or_404(User, pk=pk)
+        """
+        Endpoint DELETE para ejecutar la baja lógica del usuario. (Tarea 4)
+        """
+        user_to_delete = get_object_or_404(User, pk=pk)  # Validación de existencia (Tarea 3)
         try:
             UserService.delete_internal_user(request.user, user_to_delete)
+            # Retorna 204 No Content para confirmar el éxito de la desactivación
             return Response(status=status.HTTP_204_NO_CONTENT)
         except PermissionDenied as e:
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
