@@ -43,7 +43,7 @@ class ChoreographyListView(APIView):
         serializer = ChoreographySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            choreography = AcademyService.create_choreography(request.user, serializer.validated_data)
+            choreography = AcademyService.create_choreography(request.user, serializer)
             output_serializer = ChoreographySerializer(choreography)
             return Response(output_serializer.data, status=status.HTTP_201_CREATED)
         except PermissionDenied as e:
