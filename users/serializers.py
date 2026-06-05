@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import User
+import requests
+from django.conf import settings
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     """
@@ -104,3 +107,55 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     uidb64 = serializers.CharField()
     token = serializers.CharField()
     new_password = serializers.CharField(write_only=True, min_length=6)
+    
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Serializador personalizado que hereda de SimpleJWT para validar
+    el CAPTCHA del lado del backend antes de generar los tokens de acceso.
+    """
+    # Campo opcional u obligatorio según su flujo de desarrollo
+    captcha_token = serializers.CharField(write_only=True, required=False)
+
+    def validate(self, attrs):
+        # 1. Obtener el token de CAPTCHA enviado desde el frontend
+        captcha_token = attrs.get('captcha_token')
+        
+        # 2. Verificar si se debe omitir la validación en desarrollo
+        skip_validation = getattr(settings, 'SKIP_CAPTCHA_VALIDATION', False)
+
+        if not skip_validation:
+            if not captcha_token:
+                raise serializers.ValidationError(
+                    {"captcha": "Es necesario proporcionar el token de verificación CAPTCHA."}
+                )
+            
+            # Realizar petición de verificación a Google reCAPTCHA
+            payload = {
+                'secret': settings.RECAPTCHA_SECRET_KEY,
+                'response': captcha_token
+            }
+            try:
+                response = requests.post(
+                    'https://challenges.cloudflare.com/turnstile/v0/siteverify', 
+                    data=payload,
+                    timeout=5
+                )
+                result = response.json()
+                
+                # Si la validación de Google falla, impedimos el inicio de sesión
+                if not result.get('success'):
+                    raise serializers.ValidationError(
+                        {"captcha": "La validación del CAPTCHA ha fallado o el token ha expirado."}
+                    )
+            except requests.exceptions.RequestException:
+                raise serializers.ValidationError(
+                    {"captcha": "No fue posible conectar con el servicio de verificación de CAPTCHA."}
+                )
+
+        # 3. Remover el campo 'captcha_token' para no pasarlo al validador interno de SimpleJWT
+        attrs.pop('captcha_token', None)
+
+        # 4. Proceder con la validación de credenciales estándar (correo y contraseña)
+        # Esto cubre la tarea AB-144 y genera los tokens de la tarea AB-146
+        data = super().validate(attrs)
+        return data
