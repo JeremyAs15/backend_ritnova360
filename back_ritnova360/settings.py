@@ -147,3 +147,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_FROM_EMAIL = 'soporte@ritnova360.com'
+
+RECAPTCHA_SECRET_KEY = config('RECAPTCHA_SECRET_KEY', default='')
+SKIP_CAPTCHA_VALIDATION = config('SKIP_CAPTCHA_VALIDATION', default=False, cast=bool)
