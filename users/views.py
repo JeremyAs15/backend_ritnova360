@@ -6,8 +6,9 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404
 from .models import User
-from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer 
+from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, CustomTokenObtainPairSerializer
 from .services import UserService
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 class UserPagination(PageNumberPagination):
     """
@@ -240,3 +241,10 @@ class UserDetailView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Vista personalizada para el inicio de sesión que requiere
+    credenciales de usuario y un token de CAPTCHA válido.
+    """
+    serializer_class = CustomTokenObtainPairSerializer

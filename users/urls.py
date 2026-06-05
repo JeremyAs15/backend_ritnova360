@@ -1,10 +1,10 @@
 from django.urls import path
-from .views import StudentRegistrationView, InternalUserManagementView, UserDetailView, PasswordResetRequestView, PasswordResetConfirmView 
+from .views import StudentRegistrationView, InternalUserManagementView, UserDetailView, PasswordResetRequestView, PasswordResetConfirmView, CustomTokenObtainPairView 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     # Endpoints de Autenticación JWT estándar
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     # Ruta de autoregistro para estudiantes/clientes externos
