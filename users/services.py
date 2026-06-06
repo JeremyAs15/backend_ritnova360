@@ -72,20 +72,6 @@ class UserService:
 
         user_to_update.save()
         return user_to_update
-
-    @staticmethod
-    def delete_internal_user(creator: User, user_to_delete: User) -> None:
-        """
-        Elimina un usuario interno de la base de datos.
-        Restricción: Solo Directores o Administradores pueden realizar esta acción.
-        """
-        if creator.role not in ['admin', 'director'] and not creator.is_superuser:
-            raise PermissionDenied("No tiene permisos para eliminar usuarios de la academia.")
-        
-        if user_to_delete.role == 'student':
-            raise ValidationError("Para gestionar la baja de clientes utilice el módulo de gestión de clientes.")
-
-        user_to_delete.delete()
     
     @staticmethod
     def request_password_reset(email: str) -> None:
@@ -150,3 +136,37 @@ class UserService:
         administrador, director o profesor.
         """
         return User.objects.filter(role__in=['admin', 'director', 'teacher'])
+    
+    @staticmethod
+    def delete_internal_user(creator: User, user_to_delete: User) -> None:
+        """
+        Realiza la eliminación lógica de un usuario interno en el sistema.
+        
+        Restricciones y Validaciones:
+        - Solo Directores, Administradores o Superusuarios pueden realizar esta acción.
+        - Evita que un usuario administrativo se elimine a sí mismo.
+        - Detiene el flujo si el usuario tiene dependencias activas como coreografías creadas.
+        """
+        # Validación de permisos de quien realiza la acción (Tarea 3)
+        if creator.role not in ['admin', 'director'] and not creator.is_superuser:
+            raise PermissionDenied("No tiene permisos para eliminar usuarios de la academia.")
+        
+        # Validación del rol a eliminar
+        if user_to_delete.role == 'student':
+            raise ValidationError("Para gestionar la baja de clientes utilice el módulo de gestión de clientes.")
+
+        # Evitar la auto-eliminación
+        if creator == user_to_delete:
+            raise ValidationError("No puede eliminarse a sí mismo de la plataforma.")
+
+        # Manejar error si tiene dependencias activas (Tarea 1)
+        # Comprueba si tiene alguna coreografía registrada a su nombre
+        if user_to_delete.created_choreographies.exists():
+            raise ValidationError(
+                "No se puede eliminar al usuario porque figura como creador de coreografías en el catálogo. "
+                "Debe reasignar el creador o remover las coreografías primero."
+            )
+
+        # Eliminación lógica en la base de datos (Tarea 2)
+        user_to_delete.is_active = False
+        user_to_delete.save()

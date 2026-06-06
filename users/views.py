@@ -2,11 +2,21 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.pagination import PageNumberPagination 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404
 from .models import User
-from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer 
+from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, CustomTokenObtainPairSerializer
 from .services import UserService
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+class UserPagination(PageNumberPagination):
+    """
+    Paginación estándar que limita la respuesta a un máximo de 20 registros.
+    """
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 20
 
 class StudentRegistrationView(APIView):
     """
@@ -51,14 +61,32 @@ class InternalUserManagementView(APIView):
 
         queryset = UserService.get_internal_users()
         
-        # Filtros opcionales
+        # Filtros 
         role_filter = request.query_params.get('role')
         city_filter = request.query_params.get('city')
+        active_filter = request.query_params.get('is_active')
         
         if role_filter:
             queryset = queryset.filter(role=role_filter)
         if city_filter:
             queryset = queryset.filter(city__iexact=city_filter)
+        if active_filter is not None:
+            # Convertimos el string de la URL a booleano (maneja 'true', '1' como True, lo demás False)
+            is_active_bool = active_filter.lower() in ['true', '1', 'yes']
+            queryset = queryset.filter(is_active=is_active_bool)
+
+        # Ordenamiento dinámico (por defecto: nombre ascendente)
+        ordering_param = request.query_params.get('ordering', 'name')
+        order_fields = self.ORDERING_FIELDS_MAP.get(ordering_param, ['first_name', 'last_name'])
+        queryset = queryset.order_by(*order_fields)
+        
+        # Paginación        
+        paginator = UserPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
+        
+        if paginated_queryset is not None:
+            serializer = UserSerializer(paginated_queryset, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         # Ordenamiento dinámico (por defecto: nombre ascendente)
         ordering_param = request.query_params.get('ordering', 'name')
@@ -171,3 +199,57 @@ class PasswordResetConfirmView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+class UserDetailView(APIView):
+    """
+    Endpoint para el detalle, actualización y borrado lógico de usuarios individuales.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)  # Validación de existencia (Tarea 3)
+        if request.user != user and request.user.role not in ['admin', 'director']:
+            return Response({"detail": "Acceso denegado."}, status=status.HTTP_403_FORBIDDEN)
+            
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        user_to_update = get_object_or_404(User, pk=pk)
+        serializer = UserUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        try:
+            updated_user = UserService.update_user_profile(
+                user_to_update, 
+                request.user, 
+                serializer.validated_data
+            )
+            output_serializer = UserSerializer(updated_user)
+            return Response(output_serializer.data, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, pk):
+        """
+        Endpoint DELETE para ejecutar la baja lógica del usuario. (Tarea 4)
+        """
+        user_to_delete = get_object_or_404(User, pk=pk)  # Validación de existencia (Tarea 3)
+        try:
+            UserService.delete_internal_user(request.user, user_to_delete)
+            # Retorna 204 No Content para confirmar el éxito de la desactivación
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Vista personalizada para el inicio de sesión que requiere
+    credenciales de usuario y un token de CAPTCHA válido.
+    """
+    serializer_class = CustomTokenObtainPairSerializer
