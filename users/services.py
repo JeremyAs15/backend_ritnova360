@@ -63,15 +63,41 @@ class UserService:
         if user_to_update != editor and editor.role not in ['admin', 'director'] and not editor.is_superuser:
             raise PermissionDenied("No tiene autorización para modificar este perfil.")
 
-        # Restricción: No se permite cambiar de rol a través de la actualización estándar de perfil
-        validated_data.pop('role', None)
-        validated_data.pop('email', None)  # El email actúa como ID único y no debe cambiarse arbitrariamente
+        # Verificar permisos sobre campos privilegiados (role y email)
+        is_privileged = editor.role in ['admin', 'director'] or editor.is_superuser
+        if not is_privileged:
+            new_email = validated_data.get('email')
+            new_role = validated_data.get('role')
+            if (new_email and new_email != user_to_update.email) or (new_role and new_role != user_to_update.role):
+                raise PermissionDenied("No tiene permisos para modificar el correo o el rol.")
+            # Si se envían pero son iguales a los actuales, los removemos para evitar modificaciones accidentales
+            validated_data.pop('role', None)
+            validated_data.pop('email', None)
 
-        for attr, value in validated_data.items():
-            setattr(user_to_update, attr, value)
+        role_changed = False
+        new_role = validated_data.get('role')
+        if new_role and new_role != user_to_update.role:
+            role_changed = True
 
-        user_to_update.save()
-        return user_to_update
+        with transaction.atomic():
+            if role_changed:
+                # Ajustar is_staff de Django coherentemente con el nuevo rol
+                if new_role in ['admin', 'director']:
+                    user_to_update.is_staff = True
+                else:
+                    user_to_update.is_staff = False
+
+                # Si el nuevo rol ya no es 'teacher', limpiamos 'teacher_type'
+                if new_role != 'teacher':
+                    user_to_update.teacher_type = None
+                    validated_data.pop('teacher_type', None)
+
+            # Actualizar todos los campos permitidos y provistos
+            for attr, value in validated_data.items():
+                setattr(user_to_update, attr, value)
+
+            user_to_update.save()
+            return user_to_update
     
     @staticmethod
     def request_password_reset(email: str) -> None:
