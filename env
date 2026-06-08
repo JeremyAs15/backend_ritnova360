@@ -1,5 +1,0 @@
-DEBUG=True
-SECRET_KEY=jijija
-DATABASE_URL=postgresql://postgres.ocnzzclgwftopsacffjb:Bd_ritnova360@aws-1-us-east-2.pooler.supabase.com:5432/postgres
-RECAPTCHA_SECRET_KEY=0x4AAAAAADfibQL0QBgKIWiHsRy4_QygwyM
-SKIP_CAPTCHA_VALIDATION=False
