@@ -116,44 +116,6 @@ class InternalUserManagementView(APIView):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-class UserDetailView(APIView):
-    """
-    Endpoint para el detalle, actualización y borrado físico de usuarios individuales.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
-        if request.user != user and request.user.role not in ['admin', 'director']:
-            return Response({"detail": "Acceso denegado."}, status=status.HTTP_403_FORBIDDEN)
-            
-        serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request, pk):
-        user_to_update = get_object_or_404(User, pk=pk)
-        try:
-            updated_user = UserService.update_user_profile(user_to_update, request.user, request.data)
-            serializer = UserSerializer(updated_user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except PermissionDenied as e:
-            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def delete(self, request, pk):
-        user_to_delete = get_object_or_404(User, pk=pk)
-        try:
-            UserService.delete_internal_user(request.user, user_to_delete)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except PermissionDenied as e:
-            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
-        except ValidationError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 class PasswordResetRequestView(APIView):
     """
     Endpoint para solicitar la recuperación de contraseña.
