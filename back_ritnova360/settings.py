@@ -153,6 +153,7 @@ DEFAULT_FROM_EMAIL = 'soporte@ritnova360.com'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://frontend-ritnova360-2liv.vercel.app",
 ]
 
 RECAPTCHA_SECRET_KEY = config('RECAPTCHA_SECRET_KEY')
