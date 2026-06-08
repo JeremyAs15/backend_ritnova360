@@ -1,3 +1,6 @@
+import requests
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -88,11 +91,6 @@ class InternalUserManagementView(APIView):
             serializer = UserSerializer(paginated_queryset, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        # Ordenamiento dinámico (por defecto: nombre ascendente)
-        ordering_param = request.query_params.get('ordering', 'name')
-        order_fields = self.ORDERING_FIELDS_MAP.get(ordering_param, ['first_name', 'last_name'])
-        queryset = queryset.order_by(*order_fields)
-
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -106,44 +104,6 @@ class InternalUserManagementView(APIView):
             user = UserService.create_internal_user(request.user, serializer.validated_data)
             output_serializer = UserSerializer(user)
             return Response(output_serializer.data, status=status.HTTP_201_CREATED)
-        except PermissionDenied as e:
-            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
-        except ValidationError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class UserDetailView(APIView):
-    """
-    Endpoint para el detalle, actualización y borrado físico de usuarios individuales.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
-        if request.user != user and request.user.role not in ['admin', 'director']:
-            return Response({"detail": "Acceso denegado."}, status=status.HTTP_403_FORBIDDEN)
-            
-        serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request, pk):
-        user_to_update = get_object_or_404(User, pk=pk)
-        try:
-            updated_user = UserService.update_user_profile(user_to_update, request.user, request.data)
-            serializer = UserSerializer(updated_user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except PermissionDenied as e:
-            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def delete(self, request, pk):
-        user_to_delete = get_object_or_404(User, pk=pk)
-        try:
-            UserService.delete_internal_user(request.user, user_to_delete)
-            return Response(status=status.HTTP_204_NO_CONTENT)
         except PermissionDenied as e:
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except ValidationError as e:
@@ -253,3 +213,72 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     credenciales de usuario y un token de CAPTCHA válido.
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+class GoogleLoginView(APIView):
+    """
+    Recibe un access_token de Google, consulta la API de Google para obtener
+    los datos del perfil del usuario, y genera un token JWT de sesión.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        access_token = request.data.get('access_token')
+        if not access_token:
+            return Response(
+                {"detail": "Es necesario proporcionar el token de acceso (access_token) de Google."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Consultamos el endpoint 'userinfo' de Google enviando el access_token en las cabeceras de autorización
+        google_userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+        headers = {'Authorization': f'Bearer {access_token}'}
+
+        try:
+            response = requests.get(google_userinfo_url, headers=headers, timeout=5)
+            user_info = response.json()
+        except requests.exceptions.RequestException:
+            return Response(
+                {"detail": "No fue posible conectar con el servicio de verificación de Google."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Si Google rechaza el token o hay un error en la respuesta
+        if response.status_code != 200 or "error" in user_info:
+            return Response(
+                {"detail": "El token de acceso de Google es inválido o ha expirado."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        email = user_info.get('email')
+        if not email:
+            return Response(
+                {"detail": "No se pudo recuperar un correo electrónico válido desde Google."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Buscamos al usuario por correo, si no existe lo creamos automáticamente como estudiante
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'first_name': user_info.get('given_name', ''),
+                'last_name': user_info.get('family_name', ''),
+                'role': 'student',  # Rol predeterminado
+                'is_active': True,
+            }
+        )
+
+        # Verificamos si el usuario está activo en el sistema
+        if not user.is_active:
+            return Response(
+                {"detail": "Esta cuenta se encuentra desactivada actualmente."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Generamos los tokens JWT locales (SimpleJWT) de Ritnova360
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_200_OK)
