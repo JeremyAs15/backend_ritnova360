@@ -91,11 +91,6 @@ class InternalUserManagementView(APIView):
             serializer = UserSerializer(paginated_queryset, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        # Ordenamiento dinámico (por defecto: nombre ascendente)
-        ordering_param = request.query_params.get('ordering', 'name')
-        order_fields = self.ORDERING_FIELDS_MAP.get(ordering_param, ['first_name', 'last_name'])
-        queryset = queryset.order_by(*order_fields)
-
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
