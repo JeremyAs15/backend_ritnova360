@@ -79,19 +79,41 @@ class InternalUserCreationSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     """
     Serializador para validar los datos permitidos en la actualización de perfiles.
-    Evita la alteración del correo y rol por esta vía.
+    Permite modificar todos los campos incluyendo el correo y el rol si el usuario
+    está autorizado.
     """
     first_name = serializers.CharField(required=False, max_length=150, allow_blank=False)
     last_name = serializers.CharField(required=False, max_length=150, allow_blank=False)
+    email = serializers.EmailField(required=False)
+    role = serializers.CharField(required=False)
 
     class Meta:
         model = User
         fields = [
-            'first_name', 'last_name', 'phone_number',
+            'email', 'role', 'first_name', 'last_name', 'phone_number',
             'document_type', 'n_documento', 'birth_date', 'genre',
             'country', 'department', 'city', 'datos_facturacion_default',
             'teacher_type'
         ]
+
+    def validate_email(self, value):
+        normalized_email = value.strip().lower()
+        # Excluir al usuario actual de la validación de unicidad
+        user = self.instance
+        if user and user.email.lower() == normalized_email:
+            return normalized_email
+            
+        if User.objects.filter(email__iexact=normalized_email).exists():
+            raise serializers.ValidationError("Este correo electrónico ya está registrado por otro usuario.")
+        return normalized_email
+
+    def validate_role(self, value):
+        valid_roles = ['admin', 'director', 'teacher']
+        if value not in valid_roles:
+            raise serializers.ValidationError(
+                f"El rol especificado no es válido. Debe ser uno de los siguientes: {', '.join(valid_roles)}."
+            )
+        return value
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     """
