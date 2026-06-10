@@ -176,7 +176,7 @@ class UserDetailView(APIView):
 
     def put(self, request, pk):
         user_to_update = get_object_or_404(User, pk=pk)
-        serializer = UserUpdateSerializer(data=request.data, partial=True)
+        serializer = UserUpdateSerializer(instance=user_to_update, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         try:
             updated_user = UserService.update_user_profile(
@@ -188,6 +188,8 @@ class UserDetailView(APIView):
             return Response(output_serializer.data, status=status.HTTP_200_OK)
         except PermissionDenied as e:
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
