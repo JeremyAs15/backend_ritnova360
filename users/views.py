@@ -284,3 +284,69 @@ class GoogleLoginView(APIView):
             'access': str(refresh.access_token),
             'user': UserSerializer(user).data
         }, status=status.HTTP_200_OK)
+
+class UserProfileView(APIView):
+    """
+    Vista que permite a cualquier usuario autenticado (incluyendo clientes/estudiantes)
+    gestionar su información personal sin exponer identificadores secuenciales en la URL.
+    """
+    # Solo permite el acceso si el usuario presenta un token JWT válido.
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        Retorna los datos detallados del perfil del usuario logueado.
+        """
+        # Consulta directa a la base de datos a través del objeto request.user cargado en la sesión
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        """
+        Actualización completa del perfil del cliente.
+        """
+        # Regla de autorización estricta: se edita únicamente el registro del usuario autenticado
+        user_to_update = request.user
+        
+        # El serializador valida que los nuevos datos cumplan con las restricciones del modelo
+        serializer = UserUpdateSerializer(user_to_update, data=request.data, partial=False)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            # Reutiliza el servicio de actualización que valida permisos jerárquicos sobre roles y correos
+            updated_user = UserService.update_user_profile(
+                user_to_update, 
+                request.user, 
+                serializer.validated_data
+            )
+            output_serializer = UserSerializer(updated_user)
+            return Response(output_serializer.data, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def patch(self, request):
+        """
+        Actualización parcial del perfil del cliente.
+        """
+        # Regla de autorización estricta: se edita únicamente el registro del usuario autenticado
+        user_to_update = request.user
+        
+        # El serializador valida los datos modificados parcialmente
+        serializer = UserUpdateSerializer(user_to_update, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            updated_user = UserService.update_user_profile(
+                user_to_update, 
+                request.user, 
+                serializer.validated_data
+            )
+            output_serializer = UserSerializer(updated_user)
+            return Response(output_serializer.data, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
