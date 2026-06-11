@@ -1,13 +1,22 @@
 from django.shortcuts import render
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.pagination import PageNumberPagination 
+from django.db.models import Q  
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
 from .models import Choreography, ShoppingCart, Enroll
 from .serializers import ChoreographySerializer, ShoppingCartSerializer, EnrollSerializer, RateSerializer
 from .services import AcademyService
+
+class ChoreographyPagination(PageNumberPagination):
+    """
+    Controla la paginación del catálogo de coreografías en el servidor.
+    """
+    page_size = 6  # Número de elementos por página por defecto
+    page_size_query_param = 'page_size'
+    max_page_size = 50
 
 class ChoreographyListView(APIView):
     """
@@ -21,18 +30,48 @@ class ChoreographyListView(APIView):
 
     def get(self, request):
         """
-        Filtra el catálogo de coreografías por género musical o dificultad.
+        Filtra el catálogo de coreografías por género musical, id del creador o dificultad.
         """
-        queryset = Choreography.objects.all().prefetch_related('video_clips')
+        queryset = Choreography.objects.all().select_related('creator').prefetch_related('video_clips')
         
         genre = request.query_params.get('genre')
         difficulty = request.query_params.get('difficulty')
+        creator_id = request.query_params.get('creator')  
+        search_query = request.query_params.get('search') 
 
         if genre:
             queryset = queryset.filter(genre__iexact=genre)
         if difficulty:
             queryset = queryset.filter(difficulty_level__iexact=difficulty)
+        if creator_id:
+            queryset = queryset.filter(creator_id=creator_id)
 
+        if search_query:
+            # Busca coincidencias parciales por nombre de canción o género
+            queryset = queryset.filter(
+                Q(song_name__icontains=search_query) |
+                Q(genre__icontains=search_query)
+            )
+            
+        ordering = request.query_params.get('ordering')
+        if ordering:
+            # Lista blanca de campos permitidos para ordenar y prevenir inyecciones o errores SQL
+            allowed_ordering_fields = [
+                'price', '-price', 
+                'creation_date', '-creation_date', 
+                'song_name', '-song_name'
+            ]
+            if ordering in allowed_ordering_fields:
+                queryset = queryset.order_by(ordering)
+        
+        paginator = ChoreographyPagination()
+        paginated_queryset = paginator.paginate_queryset(queryset, request, view=self)
+        
+        if paginated_queryset is not None:
+            serializer = ChoreographySerializer(paginated_queryset, many=True)
+            # Devuelve la estructura paginada estándar de DRF: count, next, previous y results
+            return paginator.get_paginated_response(serializer.data)
+        
         serializer = ChoreographySerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
