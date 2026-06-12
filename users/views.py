@@ -350,3 +350,36 @@ class UserProfileView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class PasswordResetRequestView(APIView):
+    """
+    Endpoint para solicitar la recuperación de contraseña mediante clave temporal.
+    Acceso: Público (Cualquier usuario o visitante).
+    """
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = [] 
+
+    def post(self, request):
+        """
+        Conecta la petición POST con el flujo de recuperación y generación del backend.
+        """
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email = serializer.validated_data['email']
+        try:
+            # Ejecuta la lógica del servicio para validar, generar y guardar la clave
+            UserService.recover_password_temporary(email)
+            
+            # Retorna un mensaje descriptivo para que el frontend pueda mostrar la confirmación al usuario
+            return Response(
+                {"detail": "Se ha generado una nueva contraseña temporal y ha sido enviada a tu correo electrónico con éxito."},
+                status=status.HTTP_200_OK
+            )
+        except ValidationError as e:
+            # Si la validación falla (el correo no existe), se le notifica al cliente con código 400
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Captura de errores inesperados del sistema
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

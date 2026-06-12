@@ -6,7 +6,8 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.conf import settings
-
+import secrets
+import string
 class UserService:
     """
     Capa de servicios encargada de la lógica de negocio para la gestión de usuarios,
@@ -196,3 +197,52 @@ class UserService:
         # Eliminación lógica en la base de datos (Tarea 2)
         user_to_delete.is_active = False
         user_to_delete.save()
+
+    @staticmethod
+    def recover_password_temporary(email: str) -> str:
+        """
+        Valida si el correo existe en la base de datos.
+        Genera una contraseña temporal aleatoria.
+        Actualiza el registro del usuario en la base de datos.
+        Envía por correo electrónico la contraseña temporal autogenerada.
+        """
+        # Validar si el correo electrónico está registrado en el sistema
+        try:
+            # Buscamos el usuario por correo electrónico de manera insensible a mayúsculas
+            user = User.objects.get(email__iexact=email.strip())
+        except User.DoesNotExist:
+            # Lanza un error controlado si no existe el correo
+            raise ValidationError("El correo electrónico especificado no se encuentra registrado en nuestra plataforma.")
+
+        # Generar una contraseña temporal aleatoria segura
+        # Combinamos letras mayúsculas, minúsculas y números (longitud de 10 caracteres)
+        caracteres = string.ascii_letters + string.digits
+        password_temporal = "".join(secrets.choice(caracteres) for _ in range(10))
+
+        # Actualizar el registro del usuario en la base de datos con la nueva clave
+        # Django maneja el hashing criptográfico de forma transparente con set_password()
+        user.set_password(password_temporal)
+        user.save()
+
+        # Construcción del correo electrónico para el envío automático
+        subject = "Contraseña temporal de acceso - Ritnova360"
+        message = (
+            f"Hola {user.first_name or 'Usuario'},\n\n"
+            f"Hemos recibido una solicitud para restablecer tu acceso a Ritnova360.\n"
+            f"Se ha generado una nueva contraseña temporal para tu cuenta:\n\n"
+            f"   Contraseña temporal: {password_temporal}\n\n"
+            f"Te recomendamos iniciar sesión con esta clave de inmediato y cambiarla "
+            f"desde tu sección de perfil para mantener tu cuenta segura.\n\n"
+            f"Si tú no solicitaste este cambio, por favor ponte en contacto con soporte."
+        )
+
+        # Envío del correo usando la configuración definida de Django
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+
+        return password_temporal
