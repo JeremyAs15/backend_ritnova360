@@ -151,6 +151,8 @@ EMAIL_PORT = config('EMAIL_PORT', cast=int) # cast=int asegura que se lea como n
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool) # cast=bool asegura que se lea como booleano
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+# API Key para el envío HTTPS
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
 
 DEFAULT_FROM_EMAIL = 'soporte@ritnova360.com'
 
