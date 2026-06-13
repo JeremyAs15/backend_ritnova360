@@ -14,9 +14,9 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'last_name', 'phone_number',
             'document_type', 'n_documento', 'birth_date', 'genre',
             'country', 'department', 'city', 'role',
-            'datos_facturacion_default', 'teacher_type', 'date_joined'
+            'datos_facturacion_default', 'teacher_type', 'is_active', 'date_joined'
         ]
-        read_only_fields = ['id', 'role', 'date_joined']
+        read_only_fields = ['id', 'role', 'is_active', 'date_joined']
 
 
 class InternalUserCreationSerializer(serializers.ModelSerializer):
