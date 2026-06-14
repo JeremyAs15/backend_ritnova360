@@ -178,3 +178,19 @@ class MyEnrollmentsListView(APIView):
         enrollments = Enroll.objects.filter(user=request.user, state='active')
         serializer = EnrollSerializer(enrollments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class MarkVideoViewedView(APIView):
+    """
+    Marca un video clip como visto por el cliente autenticado.
+    El frontend llama a este endpoint cuando el usuario inicia la reproducción.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, clip_id):
+        try:
+            view, created = AcademyService.mark_video_as_viewed(request.user, clip_id)
+            return Response({"detail": "Progreso registrado."}, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -200,3 +200,29 @@ class AddTo(models.Model):
 
     def __str__(self):
         return f"{self.choreography.song_name} en Carrito {self.shopping_cart.shopping_cart_id}"
+
+class VideoView(models.Model):
+    """
+    Registra qué videos ha visto cada estudiante.
+    Se usa para calcular 'videos vistos' y 'progreso semanal' en el dashboard.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='video_views'
+    )
+    video_clip = models.ForeignKey(
+        VideoClip,
+        on_delete=models.CASCADE,
+        related_name='views'
+    )
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'video_view'
+        unique_together = ('user', 'video_clip')
+        verbose_name = 'Video visto'
+        verbose_name_plural = 'Videos vistos'
+
+    def __str__(self):
+        return f"{self.user.email} vio {self.video_clip}"

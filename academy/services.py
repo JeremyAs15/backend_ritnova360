@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied
-from .models import Choreography, Rate, Enroll, ShoppingCart, AddTo
+from .models import Choreography, Rate, Enroll, ShoppingCart, AddTo, VideoClip, VideoView
 from .serializers import ChoreographySerializer, RateSerializer
 
 class AcademyService:
@@ -107,3 +107,21 @@ class AcademyService:
             }
         )
         return rate
+
+    @staticmethod
+    def mark_video_as_viewed(user, clip_id: int):
+        """
+        Registra que un estudiante vio un video clip.
+        Requiere que el usuario esté inscrito en la coreografía correspondiente.
+        """
+        from .models import VideoView
+        video_clip = VideoClip.objects.get(pk=clip_id)
+
+        if not Enroll.objects.filter(user=user, choreography=video_clip.choreography, state='active').exists():
+            raise PermissionDenied("Debe estar inscrito en la coreografía para registrar el progreso.")
+
+        view, created = VideoView.objects.get_or_create(
+            user=user,
+            video_clip=video_clip
+        )
+        return view, created
