@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     ChoreographyListView, ShoppingCartView, CartCheckoutView, 
-    RateChoreographyView, MyEnrollmentsListView
+    RateChoreographyView, MyEnrollmentsListView, MarkVideoViewedView
 )
 
 urlpatterns = [
@@ -19,4 +19,7 @@ urlpatterns = [
     
     # Listado de productos comprados con acceso habilitado
     path('my-courses/', MyEnrollmentsListView.as_view(), name='my-enrollments'),
+
+    # Registro de progreso del estudiante
+    path('videos/<int:clip_id>/view/', MarkVideoViewedView.as_view(), name='mark-video-viewed'),
 ]
