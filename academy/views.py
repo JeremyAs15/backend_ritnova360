@@ -194,3 +194,18 @@ class MarkVideoViewedView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class DashboardView(APIView):
+    """
+    Retorna los indicadores del dashboard adaptados al rol del usuario autenticado.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            data = AcademyService.get_dashboard_data(request.user)
+            return Response(data, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
