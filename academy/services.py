@@ -1,3 +1,4 @@
+from django.urls import resolvers
 from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models import Sum, Avg, Count, F, Q
@@ -176,24 +177,34 @@ class AcademyService:
             .order_by('mes')
 
             ingresos_map = {(e['mes'].year, e['mes'].month): float(e['total']) for e in ingresos_qs}
-            ingresos_por_mes = [
-                {'mes': MESES[m], 'total': ingresos_map.get((a, m), 0)}
-                for a, m in _ultimos_6_meses(now)
-            ]
+            meses_labels = [MESES[m] for a, m in _ultimos_6_meses(now)]
 
-            ventas_por_genero = list(
+            ingresos_por_mes = {
+                'categories': meses_labels,
+                'series': [{'name': 'Ingresos', 'data': [ingresos_map.get((a, m), 0) for a, m in _ultimos_6_meses(now)]}]
+            }
+
+            ventas_genero_qs = list(
                 Enroll.objects.filter(state='active')
                 .values(genero=F('choreography__genre'))
                 .annotate(cantidad=Count('id'))
                 .order_by('-cantidad')
             )
+            ventas_por_genero = {
+                'labels': [e['genero'] for e in ventas_genero_qs],
+                'series': [e['cantidad'] for e in ventas_genero_qs]
+            }
 
-            top_coreografias = list(
+            top_qs = list(
                 Choreography.objects.annotate(
                     ventas=Count('enrollments', filter=Q(enrollments__state='active'))
                 ).order_by('-ventas')
                 .values('song_name', 'ventas')[:5]
             )
+            top_coreografias = {
+                'categories': [c['song_name'] for c in top_qs],
+                'series': [{'name': 'Ventas', 'data': [c['ventas'] for c in top_qs]}]
+            }
 
             return {
                 'role': role,
@@ -227,10 +238,10 @@ class AcademyService:
             .order_by('mes')
 
             ventas_map = {(e['mes'].year, e['mes'].month): e['cantidad'] for e in ventas_qs}
-            ventas_por_mes = [
-                {'mes': MESES[m], 'cantidad': ventas_map.get((a, m), 0)}
-                for a, m in _ultimos_6_meses(now)
-            ]
+            ventas_por_mes = {
+                'categories': [MESES[m] for a, m in _ultimos_6_meses(now)],
+                'series': [{'name': 'Ventas', 'data': [ventas_map.get((a, m), 0) for a, m in _ultimos_6_meses(now)]}]
+            }
 
             rating_promedio = Rate.objects.filter(
                 choreography__in=mis_coreografias
