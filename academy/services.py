@@ -20,6 +20,19 @@ def _ultimos_6_meses(now):
             resultado.append((now.year, total_meses))
     return resultado
 
+def _meses_en_rango(fecha_inicio, fecha_fin):
+    """Retorna lista de tuples (año, mes) entre dos fechas inclusive."""
+    resultado = []
+    año, mes = fecha_inicio.year, fecha_inicio.month
+    while (año, mes) <= (fecha_fin.year, fecha_fin.month):
+        resultado.append((año, mes))
+        if mes == 12:
+            año += 1
+            mes = 1
+        else:
+            mes += 1
+    return resultado
+
 class AcademyService:
     """
     Administra la capa de negocio relacionada a las operaciones de la academia de danza,
@@ -144,13 +157,18 @@ class AcademyService:
         return view, created
 
     @staticmethod
-    def get_dashboard_data(user):
+    def get_dashboard_data(user, fecha_inicio=None, fecha_fin=None):
         """
         Retorna los indicadores del dashboard según el rol del usuario autenticado.
         """
         User = get_user_model()
         now = timezone.now()
-        hace_6_meses = now - timedelta(days=180)
+
+        if not fecha_inicio:
+            fecha_inicio = (now - timedelta(days=180)).date()
+        if not fecha_fin:
+            fecha_fin = now.date()
+
         MESES = {
             1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr',
             5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Ago',
@@ -170,18 +188,19 @@ class AcademyService:
             ingresos_qs = AddTo.objects.filter(
                 state='active',
                 shopping_cart__state='completed',
-                shopping_cart__date__gte=hace_6_meses.date(),
+                shopping_cart__date__gte=fecha_inicio,
+                shopping_cart__date__lte=fecha_fin,
             ).annotate(mes=TruncMonth('shopping_cart__date')) \
             .values('mes') \
             .annotate(total=Sum('price_at_purchase')) \
             .order_by('mes')
 
             ingresos_map = {(e['mes'].year, e['mes'].month): float(e['total']) for e in ingresos_qs}
-            meses_labels = [MESES[m] for a, m in _ultimos_6_meses(now)]
+            rango = _meses_en_rango(fecha_inicio, fecha_fin)
 
             ingresos_por_mes = {
-                'categories': meses_labels,
-                'series': [{'name': 'Ingresos', 'data': [ingresos_map.get((a, m), 0) for a, m in _ultimos_6_meses(now)]}]
+                'categories': [MESES[m] for a, m in rango],
+                'series': [{'name': 'Ingresos', 'data': [ingresos_map.get((a, m), 0) for a, m in rango]}]
             }
 
             ventas_genero_qs = list(
@@ -231,16 +250,18 @@ class AcademyService:
             ventas_qs = Enroll.objects.filter(
                 choreography__in=mis_coreografias,
                 state='active',
-                date__gte=hace_6_meses.date(),
+                date__gte=fecha_inicio,
+                date__lte=fecha_fin,
             ).annotate(mes=TruncMonth('date')) \
             .values('mes') \
             .annotate(cantidad=Count('id')) \
             .order_by('mes')
 
+            rango = _meses_en_rango(fecha_inicio, fecha_fin)
             ventas_map = {(e['mes'].year, e['mes'].month): e['cantidad'] for e in ventas_qs}
             ventas_por_mes = {
-                'categories': [MESES[m] for a, m in _ultimos_6_meses(now)],
-                'series': [{'name': 'Ventas', 'data': [ventas_map.get((a, m), 0) for a, m in _ultimos_6_meses(now)]}]
+                'categories': [MESES[m] for a, m in rango],
+                'series': [{'name': 'Ventas', 'data': [ventas_map.get((a, m), 0) for a, m in rango]}]
             }
 
             rating_promedio = Rate.objects.filter(
@@ -273,7 +294,8 @@ class AcademyService:
 
             progreso_qs = VideoView.objects.filter(
                 user=user,
-                viewed_at__gte=hace_6_meses,
+                viewed_at__date__gte=fecha_inicio,
+                viewed_at__date__lte=fecha_fin,
             ).annotate(semana=TruncWeek('viewed_at')) \
             .values('semana') \
             .annotate(cantidad=Count('id')) \
