@@ -170,7 +170,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # 3. Remover el campo 'captcha_token' para no pasarlo al validador interno de SimpleJWT
         attrs.pop('captcha_token', None)
 
+        data = super().validate(attrs)
         # 4. Proceder con la validación de credenciales estándar (correo y contraseña)
         # Esto cubre la tarea AB-144 y genera los tokens de la tarea AB-146
-        data = super().validate(attrs)
+        data['user'] = UserSerializer(self.user).data
         return data
