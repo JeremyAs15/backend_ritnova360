@@ -175,3 +175,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Esto cubre la tarea AB-144 y genera los tokens de la tarea AB-146
         data['user'] = UserSerializer(self.user).data
         return data
+    
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=6)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Las nuevas contraseñas no coinciden."})
+        return attrs

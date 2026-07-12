@@ -9,7 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404
 from .models import User
-from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, CustomTokenObtainPairSerializer
+from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, CustomTokenObtainPairSerializer, ChangePasswordSerializer
 from .services import UserService
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -382,4 +382,22 @@ class PasswordResetRequestView(APIView):
         except Exception as e:
             # Captura de errores inesperados del sistema
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+
+        # Verificar contraseña antigua
+        if not user.check_password(serializer.validated_data['old_password']):
+            return Response({"old_password": ["La contraseña actual es incorrecta."]}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Cambiar contraseña
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        return Response({"detail": "Contraseña actualizada correctamente."}, status=status.HTTP_200_OK)
 
