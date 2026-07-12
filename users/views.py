@@ -111,29 +111,6 @@ class InternalUserManagementView(APIView):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class PasswordResetRequestView(APIView):
-    """
-    Endpoint para solicitar la recuperación de contraseña.
-    Acceso: Público.
-    """
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        serializer = PasswordResetRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        email = serializer.validated_data['email']
-        try:
-            UserService.request_password_reset(email)
-            # Retornamos un mensaje genérico por seguridad para evitar enumeración de cuentas
-            return Response(
-                {"detail": "Si el correo electrónico coincide con una cuenta activa, se ha enviado un mensaje con las instrucciones."},
-                status=status.HTTP_200_OK
-            )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 class PasswordResetConfirmView(APIView):
     """
     Endpoint para confirmar el cambio de contraseña enviando el token y la nueva clave.
