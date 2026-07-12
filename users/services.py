@@ -246,3 +246,20 @@ class UserService:
         )
 
         return password_temporal
+    
+    @staticmethod
+    def count_students() -> dict:
+        """
+        Calcula estadísticas sobre los estudiantes registrados en la academia.
+        Retorna el total de estudiantes registrados y cuántos de ellos están activos.
+        """
+        from users.models import User
+        
+        # Filtramos los usuarios por el rol específico de estudiante
+        total_estudiantes = User.objects.filter(role='student').count()
+        estudiantes_activos = User.objects.filter(role='student', is_active=True).count()
+        
+        return {
+            "total_registrados": total_estudiantes,
+            "activos": estudiantes_activos
+        }
