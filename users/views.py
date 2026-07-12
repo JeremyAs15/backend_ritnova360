@@ -12,6 +12,10 @@ from .models import User
 from .serializers import UserSerializer, StudentRegistrationSerializer, InternalUserCreationSerializer, UserUpdateSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, CustomTokenObtainPairSerializer, ChangePasswordSerializer
 from .services import UserService
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from .services import UserService
 
 class UserPagination(PageNumberPagination):
     """
@@ -377,4 +381,18 @@ class ChangePasswordView(APIView):
         user.set_password(serializer.validated_data['new_password'])
         user.save()
         return Response({"detail": "Contraseña actualizada correctamente."}, status=status.HTTP_200_OK)
+    
+class StudentCountView(APIView):
+    """
+    Endpoint para que administradores o directores consulten la cantidad de estudiantes.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Filtro de seguridad: solo personal administrativo
+        if request.user.role not in ['admin', 'director'] and not request.user.is_superuser:
+            return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
+            
+        data = UserService.count_students()
+        return Response(data, status=status.HTTP_200_OK)
 
