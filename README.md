@@ -58,7 +58,7 @@ Usuarios listos creados desde el backend para experimentación con el programa.
 **Profesor de Danza**
 
     correo: profesor.carlos@ritnova360.com
-    password: Password123
+    password: Password12345
 
 **Estudiante**
 
