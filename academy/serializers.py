@@ -45,6 +45,20 @@ class ChoreographySerializer(serializers.ModelSerializer):
             
         return choreography
 
+    def update(self, instance, validated_data):
+        clips_data = validated_data.pop('video_clips', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if clips_data is not None:
+            instance.video_clips.all().delete()
+            for clip in clips_data:
+                VideoClip.objects.create(choreography=instance, **clip)
+
+        return instance
+
 
 class RateSerializer(serializers.ModelSerializer):
     """

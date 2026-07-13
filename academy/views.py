@@ -222,3 +222,30 @@ class DashboardView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ChoreographyDetailView(APIView):
+    """
+    Gestiona las operaciones sobre una coreografía específica por ID.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, choreography_id):
+        """
+        Actualiza los datos de una coreografía. Solo el creador o un director pueden hacerlo.
+        """
+        try:
+            choreography = Choreography.objects.get(pk=choreography_id)
+        except Choreography.DoesNotExist:
+            return Response({"detail": "Coreografía no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ChoreographySerializer(choreography, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            updated = AcademyService.update_choreography(request.user, choreography, serializer)
+            output_serializer = ChoreographySerializer(updated)
+            return Response(output_serializer.data, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
