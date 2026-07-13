@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     ChoreographyListView, ShoppingCartView, CartCheckoutView, 
-    RateChoreographyView, MyEnrollmentsListView, MarkVideoViewedView, DashboardView
+    RateChoreographyView, MyEnrollmentsListView, MarkVideoViewedView, 
+    DashboardView, CartItemView
 )
 
 urlpatterns = [
@@ -25,4 +26,7 @@ urlpatterns = [
 
     # Obtención de estadísticas y métricas según el rol del usuario
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
+
+    # Gestionar ítems individuales del carrito
+    path('cart/<int:choreography_id>/', CartItemView.as_view(), name='cart-item'),
 ]
