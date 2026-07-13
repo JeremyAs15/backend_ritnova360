@@ -278,17 +278,10 @@ class ChoreographyDetailView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CartItemView(APIView):
-<<<<<<< Updated upstream
     """
     Gestiona la eliminación de ítems individuales del carrito de compras.
     """
     permission_classes = [permissions.IsAuthenticated]
-=======
-        """
-        Gestiona la eliminación de ítems individuales del carrito de compras.
-        """
-        permission_classes = [permissions.IsAuthenticated]
->>>>>>> Stashed changes
 
     def delete(self, request, choreography_id):
         """
