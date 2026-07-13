@@ -1,6 +1,3 @@
-
-# from backend_ritnova360.academy import serializers
-from . import serializers
 from django.urls import resolvers
 from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied
