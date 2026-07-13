@@ -229,6 +229,16 @@ class ChoreographyDetailView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get(self, request, choreography_id):
+        choreography = get_object_or_404(Choreography, pk=choreography_id, is_active=True)
+        serializer = ChoreographySerializer(choreography)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def put(self, request, choreography_id):
         """
         Actualiza los datos de una coreografía. Solo el creador o un director pueden hacerlo.
@@ -268,10 +278,17 @@ class ChoreographyDetailView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CartItemView(APIView):
+<<<<<<< Updated upstream
     """
     Gestiona la eliminación de ítems individuales del carrito de compras.
     """
     permission_classes = [permissions.IsAuthenticated]
+=======
+        """
+        Gestiona la eliminación de ítems individuales del carrito de compras.
+        """
+        permission_classes = [permissions.IsAuthenticated]
+>>>>>>> Stashed changes
 
     def delete(self, request, choreography_id):
         """
