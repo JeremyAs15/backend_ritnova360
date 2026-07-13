@@ -97,7 +97,12 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
     Serializador del carrito de compras.
     Proporciona un desglose detallado de los ítems incluidos y la sumatoria del costo total.
     """
-    items = AddToSerializer(many=True, read_only=True)
+    items = serializers.SerializerMethodField()
+
+    def get_items(self, obj):
+        active_items = obj.items.filter(state='active')
+        return AddToSerializer(active_items, many=True).data
+        
     total_amount = serializers.SerializerMethodField()
 
     class Meta:

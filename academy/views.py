@@ -33,7 +33,7 @@ class ChoreographyListView(APIView):
         """
         Filtra el catálogo de coreografías por género musical, id del creador o dificultad.
         """
-        queryset = Choreography.objects.all().select_related('creator').prefetch_related('video_clips')
+        queryset = Choreography.objects.filter(is_active=True).select_related('creator').prefetch_related('video_clips')
         
         genre = request.query_params.get('genre')
         difficulty = request.query_params.get('difficulty')
@@ -249,3 +249,41 @@ class ChoreographyDetailView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, choreography_id):
+        """
+        Elimina lógicamente una coreografía marcándola como inactiva en el catálogo.
+        """
+        try:
+            choreography = Choreography.objects.get(pk=choreography_id)
+        except Choreography.DoesNotExist:
+            return Response({"detail": "Coreografía no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            AcademyService.delete_choreography(request.user, choreography)
+            return Response({"detail": "Coreografía eliminada del catálogo."}, status=status.HTTP_200_OK)
+        except PermissionDenied as e:
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    class CartItemView(APIView):
+        """
+        Gestiona la eliminación de ítems individuales del carrito de compras.
+        """
+        permission_classes = [permissions.IsAuthenticated]
+
+        def delete(self, request, choreography_id):
+            """
+            Quita una coreografía del carrito activo. Retorna el carrito actualizado
+            para que el frontend recalcule el total sin necesidad de un GET adicional.
+            """
+            try:
+                AcademyService.remove_from_cart(request.user, choreography_id)
+                cart = ShoppingCart.objects.get(user=request.user, state='pending')
+                serializer = ShoppingCartSerializer(cart)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except ValidationError as e:
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

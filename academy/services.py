@@ -361,3 +361,22 @@ class AcademyService:
             }
 
         raise PermissionDenied("Rol no reconocido para el dashboard.")
+
+    @staticmethod
+    def remove_from_cart(user, choreography_id: int) -> None:
+        """
+        Marca un ítem del carrito como removido. No lo elimina físicamente
+        para preservar trazabilidad del carrito.
+        """
+        try:
+            cart = ShoppingCart.objects.get(user=user, state='pending')
+        except ShoppingCart.DoesNotExist:
+            raise ValidationError("No tienes un carrito activo.")
+
+        try:
+            item = AddTo.objects.get(shopping_cart=cart, choreography_id=choreography_id, state='active')
+        except AddTo.DoesNotExist:
+            raise ValidationError("El producto no está en el carrito.")
+
+        item.state = 'removed'
+        item.save(update_fields=['state'])
