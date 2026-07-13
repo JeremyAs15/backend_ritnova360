@@ -18,13 +18,19 @@ class ChoreographySerializer(serializers.ModelSerializer):
     # Flujo de lectura: Incluye la lista completa de clips detallados asociados.
     # Flujo de escritura: Permite recibir un JSON con la estructura del clip directamente.
     video_clips = VideoClipSerializer(many=True, required=False)
+    creator_name = serializers.SerializerMethodField()
     creator_email = serializers.EmailField(source='creator.email', read_only=True)
+
+    def get_creator_name(self, obj):
+        if obj.creator:
+            return f"{obj.creator.first_name} {obj.creator.last_name}"
+        return "Profesor"
 
     class Meta:
         model = Choreography
         fields = [
             'choreography_id', 'song_name', 'genre', 'difficulty_level',
-            'price', 'creator', 'creator_email', 'creation_date', 'video_clips',
+            'price', 'creator', 'creator_name', 'creator_email', 'creation_date', 'video_clips',
             'thumbnail_url', 
             'description'
         ]

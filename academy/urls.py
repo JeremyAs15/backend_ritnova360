@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     ChoreographyListView, ShoppingCartView, CartCheckoutView, 
     RateChoreographyView, MyEnrollmentsListView, MarkVideoViewedView, 
-    DashboardView, CartItemView
+    DashboardView, CartItemView, ChoreographyDetailView
 )
 
 urlpatterns = [
@@ -29,4 +29,7 @@ urlpatterns = [
 
     # Gestionar ítems individuales del carrito
     path('cart/<int:choreography_id>/', CartItemView.as_view(), name='cart-item'),
+
+    # Detalle de una coreografía específica
+    path('choreographies/<int:choreography_id>/', ChoreographyDetailView.as_view(), name='choreography-detail'),
 ]
