@@ -1,3 +1,4 @@
+from backend_ritnova360.academy import serializers
 from django.urls import resolvers
 from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -47,7 +48,18 @@ class AcademyService:
         if user_creator.role not in ['teacher', 'admin', 'director'] and not user_creator.is_superuser:
             raise PermissionDenied("Solo el personal docente o administrativo de la academia puede registrar coreografías.")
         
-        return serializer.save(creator=user_creator)    
+        return serializer.save(creator=user_creator)   
+
+    @staticmethod
+    def update_choreography(user, choreography: Choreography, serializer: ChoreographySerializer) -> Choreography:
+        """
+        Verifica permisos de edición: solo el creador o un director pueden modificar la coreografía.
+        La verificación de existencia se hace en la vista antes de llamar este método.
+        """
+        if user.role != 'director' and choreography.creator_id != user.pk:
+            raise PermissionDenied("Solo el creador de la coreografía o un director pueden editarla.")
+
+        return serializer.save() 
 
     @staticmethod
     def add_choreography_to_cart(user, choreography_id: int) -> AddTo:
