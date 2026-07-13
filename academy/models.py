@@ -12,7 +12,9 @@ class Choreography(models.Model):
     song_name = models.CharField('Nombre de la canción', max_length=255)
     genre = models.CharField('Género musical', max_length=100)
     difficulty_level = models.CharField('Nivel de dificultad', max_length=50)
-    price = models.DecimalField('Precio', max_digits=10, decimal_places=2)
+    price = models.DecimalField('Precio', max_digits=10, decimal_places=2)   
+    thumbnail_url = models.URLField('URL de la miniatura de portada', max_length=500, blank=True, null=True)
+    description = models.TextField('Descripción de la clase', blank=True, null=True)
     
     # Relación: Una coreografía pertenece al profesor que la crea.
     # Si el profesor es eliminado, la coreografía no se borra (ponemos null).
@@ -40,8 +42,11 @@ class VideoClip(models.Model):
     Secciones de video individuales que componen el paso a paso de una coreografía.
     Establece una relación de uno a muchos (1:N) con Coreografía.
     """
+    MEDIA_TYPES = [
+        ('video', 'Video'),
+        ('image', 'Imagen'),
+    ]
     clip_id = models.AutoField(primary_key=True)
-    
     # Relación: Muchos video clips pertenecen a una sola coreografía (1 a N).
     # Si la coreografía se borra, todos sus clips se borran en cascada (CASCADE).
     choreography = models.ForeignKey(
@@ -51,10 +56,19 @@ class VideoClip(models.Model):
         verbose_name='Coreografía'
     )
     part_number = models.IntegerField('Número de parte o sección')
-    video_url = models.URLField('URL del video', max_length=500)
+    
+    
+    media_type = models.CharField(
+        'Tipo de recurso', 
+        max_length=10, 
+        choices=MEDIA_TYPES, 
+        default='video'
+    )
+    
+    video_url = models.URLField('URL del recurso (Video o Imagen)', max_length=500)
 
     def __str__(self):
-        return f"{self.choreography.song_name} - Parte {self.part_number}"
+        return f"{self.choreography.song_name} - Parte {self.part_number} ({self.get_media_type_display()})"
 
     class Meta:
         db_table = 'video_clip'
