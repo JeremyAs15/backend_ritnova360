@@ -1,4 +1,4 @@
-from . import serializers
+from backend_ritnova360.academy import serializers
 from django.urls import resolvers
 from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -60,6 +60,18 @@ class AcademyService:
             raise PermissionDenied("Solo el creador de la coreografía o un director pueden editarla.")
 
         return serializer.save() 
+
+    @staticmethod
+    def delete_choreography(user, choreography: Choreography) -> None:
+        """
+        Elimina lógicamente una coreografía. Los accesos de estudiantes que ya la compraron
+        no se ven afectados porque Enroll permanece intacto.
+        """
+        if user.role != 'director' and choreography.creator_id != user.pk:
+            raise PermissionDenied("Solo el creador de la coreografía o un director pueden eliminarla.")
+
+        choreography.is_active = False
+        choreography.save(update_fields=['is_active'])
 
     @staticmethod
     def add_choreography_to_cart(user, choreography_id: int) -> AddTo:

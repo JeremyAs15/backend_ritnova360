@@ -27,6 +27,8 @@ class Choreography(models.Model):
     )
     creation_date = models.DateField('Fecha de creación', auto_now_add=True)
 
+    is_active = models.BooleanField('Activa en catálogo', default=True)
+
     def __str__(self):
         return f"{self.song_name} ({self.genre})"
 
