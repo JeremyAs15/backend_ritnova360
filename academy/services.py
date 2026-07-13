@@ -1,4 +1,4 @@
-# from backend_ritnova360.academy import serializers
+from backend_ritnova360.academy import serializers
 from django.urls import resolvers
 from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -354,6 +354,7 @@ class AcademyService:
                         'genero': c.genre,
                         'precio': float(c.price),
                         'profesor': f"{c.creator.first_name} {c.creator.last_name}" if c.creator else None,
+                        'thumbnail_url': c.thumbnail_url,
                     }
                     for c in recomendaciones_qs[:3]
                 ],
