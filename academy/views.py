@@ -267,23 +267,23 @@ class ChoreographyDetailView(APIView):
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    class CartItemView(APIView):
-        """
-        Gestiona la eliminación de ítems individuales del carrito de compras.
-        """
-        permission_classes = [permissions.IsAuthenticated]
+class CartItemView(APIView):
+    """
+    Gestiona la eliminación de ítems individuales del carrito de compras.
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
-        def delete(self, request, choreography_id):
-            """
-            Quita una coreografía del carrito activo. Retorna el carrito actualizado
-            para que el frontend recalcule el total sin necesidad de un GET adicional.
-            """
-            try:
-                AcademyService.remove_from_cart(request.user, choreography_id)
-                cart = ShoppingCart.objects.get(user=request.user, state='pending')
-                serializer = ShoppingCartSerializer(cart)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except ValidationError as e:
-                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def delete(self, request, choreography_id):
+        """
+        Quita una coreografía del carrito activo. Retorna el carrito actualizado
+        para que el frontend recalcule el total sin necesidad de un GET adicional.
+        """
+        try:
+            AcademyService.remove_from_cart(request.user, choreography_id)
+            cart = ShoppingCart.objects.get(user=request.user, state='pending')
+            serializer = ShoppingCartSerializer(cart)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
