@@ -7,7 +7,7 @@ class VideoClipSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = VideoClip
-        fields = ['clip_id', 'part_number', 'video_url']
+        fields = ['clip_id', 'part_number', 'video_url', 'media_type' ]
 
 
 class ChoreographySerializer(serializers.ModelSerializer):
@@ -24,7 +24,9 @@ class ChoreographySerializer(serializers.ModelSerializer):
         model = Choreography
         fields = [
             'choreography_id', 'song_name', 'genre', 'difficulty_level',
-            'price', 'creator', 'creator_email', 'creation_date', 'video_clips'
+            'price', 'creator', 'creator_email', 'creation_date', 'video_clips',
+            'thumbnail_url', 
+            'description'
         ]
         read_only_fields = ['choreography_id', 'creation_date', 'creator']
 
