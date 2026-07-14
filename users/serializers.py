@@ -108,14 +108,17 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class StudentRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializador para la autoregistración pública de estudiantes.
-    Adaptado para registro rápido (Solo Nombre, Apellido, Email y Clave).
+    Los datos personales (teléfono, fecha de nacimiento, género, documento)
+    son opcionales para no bloquear el registro rápido.
     """
     password = serializers.CharField(write_only=True, required=True, min_length=6)
 
     class Meta:
         model = User
-        # Redujimos los fields a estrictamente lo que manda el frontend
-        fields = ['email', 'password', 'first_name', 'last_name']
+        fields = [
+            'email', 'password', 'first_name', 'last_name',
+            'phone_number', 'birth_date', 'genre', 'document_type', 'n_documento',
+        ]
 
     def validate_email(self, value):
         normalized_email = value.strip().lower()
