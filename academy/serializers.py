@@ -129,7 +129,18 @@ class EnrollSerializer(serializers.ModelSerializer):
     Serializador de lectura para registrar los accesos aprobados a las coreografías.
     """
     choreography_name = serializers.CharField(source='choreography.song_name', read_only=True)
-    
+    thumbnail_url = serializers.URLField(source='choreography.thumbnail_url', read_only=True)
+    genre = serializers.CharField(source='choreography.genre', read_only=True)
+    difficulty_level = serializers.CharField(source='choreography.difficulty_level', read_only=True)
+    price = serializers.DecimalField(source='choreography.price', max_digits=10, decimal_places=2, read_only=True)
+    creator_name = serializers.SerializerMethodField()
+
+    def get_creator_name(self, obj):
+        if obj.choreography.creator:
+            return f"{obj.choreography.creator.first_name} {obj.choreography.creator.last_name}".strip()
+        return "Profesor"
+
     class Meta:
         model = Enroll
-        fields = ['id', 'choreography', 'choreography_name', 'date', 'state', 'id_source']
+        fields = ['id', 'choreography', 'choreography_name', 'thumbnail_url', 'genre',
+                  'difficulty_level', 'price', 'creator_name', 'date', 'state', 'id_source']
