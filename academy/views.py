@@ -270,8 +270,12 @@ class ChoreographyDetailView(APIView):
             return Response({"detail": "Coreografía no encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            AcademyService.delete_choreography(request.user, choreography)
-            return Response({"detail": "Coreografía eliminada del catálogo."}, status=status.HTTP_200_OK)
+            result = AcademyService.delete_choreography(request.user, choreography)
+            return Response({
+                "detail": "Coreografía eliminada del catálogo.",
+                "has_sales": result['has_sales'],
+                "enrollments_count": result['enrollments_count'],
+            }, status=status.HTTP_200_OK)
         except PermissionDenied as e:
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
