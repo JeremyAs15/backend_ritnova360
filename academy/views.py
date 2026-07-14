@@ -35,6 +35,10 @@ class ChoreographyListView(APIView):
         """
         queryset = Choreography.objects.filter(is_active=True).select_related('creator').prefetch_related('video_clips')
         
+        user_only = request.query_params.get('user_only') == 'true'
+        if user_only and request.user.is_authenticated:
+            queryset = queryset.filter(creator=request.user)
+
         genre = request.query_params.get('genre')
         difficulty = request.query_params.get('difficulty')
         creator_id = request.query_params.get('creator')  
