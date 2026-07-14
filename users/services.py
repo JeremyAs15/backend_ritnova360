@@ -159,16 +159,25 @@ class UserService:
     @staticmethod
     def get_internal_users():
         """
-        Recupera de la base de datos los usuarios que tienen rol de 
+        Recupera de la base de datos los usuarios que tienen rol de
         administrador, director o profesor.
         """
         return User.objects.filter(role__in=['admin', 'director', 'teacher'])
-    
+
+    @staticmethod
+    def get_all_users():
+        """
+        Recupera todos los usuarios de la plataforma (personal interno y estudiantes)
+        para su gestión desde el panel de administración.
+        """
+        return User.objects.all()
+
     @staticmethod
     def delete_internal_user(creator: User, user_to_delete: User) -> None:
         """
-        Realiza la eliminación lógica de un usuario interno en el sistema.
-        
+        Realiza la eliminación lógica (desactivación) de un usuario en el sistema,
+        ya sea personal interno o estudiante.
+
         Restricciones y Validaciones:
         - Solo Directores, Administradores o Superusuarios pueden realizar esta acción.
         - Evita que un usuario administrativo se elimine a sí mismo.
@@ -177,10 +186,6 @@ class UserService:
         # Validación de permisos de quien realiza la acción (Tarea 3)
         if creator.role not in ['admin', 'director'] and not creator.is_superuser:
             raise PermissionDenied("No tiene permisos para eliminar usuarios de la academia.")
-        
-        # Validación del rol a eliminar
-        if user_to_delete.role == 'student':
-            raise ValidationError("Para gestionar la baja de clientes utilice el módulo de gestión de clientes.")
 
         # Evitar la auto-eliminación
         if creator == user_to_delete:

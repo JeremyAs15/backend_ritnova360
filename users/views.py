@@ -60,13 +60,14 @@ class InternalUserManagementView(APIView):
 
     def get(self, request):
         """
-        Listar usuarios internos con soporte para filtros por rol y ciudad.
+        Listar todos los usuarios de la plataforma (personal interno y estudiantes),
+        con soporte para filtros por rol y ciudad.
         """
-        # Filtro de seguridad: Un estudiante no debe poder listar la nómina interna libremente
+        # Filtro de seguridad: Un estudiante no debe poder listar la nómina libremente
         if request.user.role not in ['admin', 'director'] and not request.user.is_superuser:
             return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
 
-        queryset = UserService.get_internal_users()
+        queryset = UserService.get_all_users()
         
         # Filtros 
         role_filter = request.query_params.get('role')
