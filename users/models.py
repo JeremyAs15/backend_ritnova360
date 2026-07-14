@@ -35,10 +35,11 @@ class User(AbstractUser):
     phone_number = models.CharField('Número de teléfono', max_length=20, blank=True, null=True)
     
     DOCUMENT_TYPES = [
-        ('cc', 'Cédula de Ciudadanía'),
-        ('passport', 'Pasaporte'),
-        ('nit', 'NIT'),
-        ('ce', 'Cédula de Extranjería'),
+        ('CC', 'Cédula de Ciudadanía'),
+        ('CE', 'Cédula de Extranjería'),
+        ('NIT', 'NIT'),
+        ('TI', 'Tarjeta de Identidad'),
+        ('PASSPORT', 'Pasaporte'),
     ]
     document_type = models.CharField('Tipo de documento', max_length=15, choices=DOCUMENT_TYPES, blank=True, null=True)
     n_documento = models.CharField('Número de documento', max_length=50, blank=True, null=True)

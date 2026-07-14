@@ -1,3 +1,4 @@
+import json
 from django.urls import resolvers
 from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied
@@ -181,6 +182,25 @@ class AcademyService:
                 )
             
             user.datos_facturacion_default = billing_info
+
+            # Persistir los campos estructurados de facturación en el perfil del usuario,
+            # además del respaldo en texto libre (datos_facturacion_default).
+            try:
+                billing_data = json.loads(billing_info) if billing_info else {}
+            except (TypeError, ValueError):
+                billing_data = {}
+
+            if billing_data.get('doc_type'):
+                user.document_type = billing_data['doc_type']
+            if billing_data.get('doc_number'):
+                user.n_documento = billing_data['doc_number']
+            if billing_data.get('country'):
+                user.country = billing_data['country']
+            if billing_data.get('department'):
+                user.department = billing_data['department']
+            if billing_data.get('city'):
+                user.city = billing_data['city']
+
             user.save()
 
             # Guardamos los metadatos de la transacción en el carrito completado
@@ -384,6 +404,17 @@ class AcademyService:
             if generos_usuario:
                 recomendaciones_qs = recomendaciones_qs.filter(genre__in=generos_usuario)
 
+            generos_comprados_qs = list(
+                mis_inscripciones
+                .values(genero=F('choreography__genre'))
+                .annotate(cantidad=Count('id'))
+                .order_by('-cantidad')
+            )
+            generos_comprados = {
+                'labels': [e['genero'] for e in generos_comprados_qs],
+                'series': [e['cantidad'] for e in generos_comprados_qs]
+            }
+
             return {
                 'role': role,
                 'kpis': {
@@ -400,6 +431,7 @@ class AcademyService:
                     {'semana': e['semana'].strftime('%Y-%m-%d'), 'cantidad': e['cantidad']}
                     for e in progreso_qs
                 ],
+                'generos_comprados': generos_comprados,
                 'recomendaciones': [
                     {
                         'choreography_id': c.choreography_id,
