@@ -37,7 +37,13 @@ source venv/bin/activate
 ## 2. Instalación de Dependencias
 Con el entorno virtual activo, instala todas las librerías necesarias especificadas en el archivo requirements.txt:
 ```Bash
-pip install -r requirements.txt
+pip install -r requirements.txt 
+```
+
+## 3. Correr el aplicativo
+Correr este comando dentro del entrono virtual venv.
+```Bash
+python manage.py runserver 
 ```
 
 ## Usuarios disponibles
@@ -68,5 +74,46 @@ Usuarios listos creados desde el backend para experimentación con el programa.
 ## Página disponible en: 
 
 https://backend-ritnova360.onrender.com
+
+## 4. Correr las pruebas en Selenium
+
+Crear el entorno virtual para las pruebas
+
+```Bash
+python -m venv venv_tests
+```
+
+Activar el entorno virtual:
+En Windows (CMD):
+```Bash
+venv_tests\Scripts\activate
+```
+En Windows (PowerShell):
+```Bash
+Powershell
+.\venv_tests\Scripts\Activate.ps1
+```
+En macOS / Linux:
+```Bash
+source venv_tests/bin/activate
+```
+
+Dentro del entorno activado descargar las librerias necesarias
+
+```Bash
+pip install pytest selenium webdriver-manager
+```
+
+Para iniciar el test, ejecuta el siguiente comando en tu terminal:
+```Bash
+pytest test_login.py -v -s
+```
+
+Recomendaciones adicionales, las pruebas deben hacerse de manera local, y el archivo .env del frontend debe tener el siguiente parámetro:
+
+```Bash
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+```
+Esto se hace con el fin de evitar problemas con el token, también debe de poner SKIP_CAPTCHA_VALIDATION=True, dentro del .env en el backend en caso de ser necesario
 
 
