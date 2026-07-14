@@ -107,12 +107,23 @@ class AddToSerializer(serializers.ModelSerializer):
     """
     choreography_name = serializers.CharField(source='choreography.song_name', read_only=True)
     choreography_price = serializers.DecimalField(source='choreography.price', max_digits=10, decimal_places=2, read_only=True)
+    choreography_thumbnail = serializers.URLField(source='choreography.thumbnail_url', read_only=True)
+    choreography_genre = serializers.CharField(source='choreography.genre', read_only=True)
+    choreography_instructor = serializers.SerializerMethodField()
+
+    def get_choreography_instructor(self, obj):
+        if obj.choreography.creator:
+            return f"{obj.choreography.creator.first_name} {obj.choreography.creator.last_name}"
+        return "Profesor Ritnova"
 
     class Meta:
         model = AddTo
-        fields = ['id', 'choreography', 'choreography_name', 'choreography_price', 'price_at_purchase', 'state']
+        fields = [
+            'id', 'choreography', 'choreography_name', 'choreography_price', 
+            'choreography_thumbnail', 'choreography_genre', 'choreography_instructor', 
+            'price_at_purchase', 'state'
+        ]
         read_only_fields = ['id', 'price_at_purchase', 'state']
-
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
     """
