@@ -113,20 +113,64 @@ class AcademyService:
             return cart_item
 
     @staticmethod
-    def process_cart_checkout(user, billing_info: str) -> ShoppingCart:
+    def process_cart_checkout(user, billing_info: str, payment_method: str = None, payment_data: dict = None, idempotency_key: str = None) -> ShoppingCart:
         """
-        Procesa el pago simulado. Convierte todos los ítems activos del carrito
-        en registros de inscripción formal ('Enroll') y actualiza el estado del carrito.
+        Procesa el pago simulado de forma idempotente.
+        Convierte los ítems activos del carrito en registros de inscripción formal ('Enroll').
         """
+        if idempotency_key:
+            # Si ya existe un carrito completado con esta clave de idempotencia, lo retornamos de inmediato
+            existing_completed_cart = ShoppingCart.objects.filter(
+                user=user, 
+                state='completed', 
+                idempotency_key=idempotency_key
+            ).first()
+            if existing_completed_cart:
+                return existing_completed_cart
+
         cart = ShoppingCart.objects.filter(user=user, state='pending').first()
         if not cart or not cart.items.filter(state='active').exists():
             raise ValidationError("Su carrito de compras pendiente está vacío.")
 
         active_items = cart.items.filter(state='active')
 
+        # Simulación de pago
+        if not payment_method or payment_method not in ['card', 'pse']:
+            raise ValidationError("Método de pago no soportado o ausente.")
+
+        if payment_method == 'card':
+            # Simulación de validación de Tarjeta de Crédito/Débito
+            card_number = payment_data.get('card_number', '').replace(" ", "")
+            cvv = payment_data.get('cvv', '')
+            expiry = payment_data.get('expiry', '')
+            
+            if len(card_number) < 13 or len(card_number) > 19:
+                raise ValidationError("Número de tarjeta inválido.")
+            if len(cvv) < 3 or len(cvv) > 4:
+                raise ValidationError("Código de seguridad CVV inválido.")
+            if not expiry or '/' not in expiry:
+                raise ValidationError("Fecha de expiración con formato inválido (MM/AA).")
+            
+            # Simular rechazo de fondos insuficiente si el número de tarjeta termina en '0000'
+            if card_number.endswith('0000'):
+                raise ValidationError("Transacción rechazada: Fondos insuficientes o tarjeta denegada.")
+
+        elif payment_method == 'pse':
+            # Simulación de validación de PSE (Transferencia bancaria en Colombia)
+            bank = payment_data.get('bank', '')
+            user_email = payment_data.get('email', '')
+            doc_number = payment_data.get('doc_number', '')
+
+            if not bank:
+                raise ValidationError("Debe seleccionar una entidad bancaria.")
+            if "@" not in user_email:
+                raise ValidationError("Correo electrónico de PSE no válido.")
+            if not doc_number or len(doc_number) < 5:
+                raise ValidationError("Número de documento de identificación inválido.")
+
+        # --- REGISTRO DE LA COMPRA ---
         with transaction.atomic():
             for item in active_items:
-                # Regla: Si por error se duplica la compra, no genera un nuevo registro de matrícula
                 Enroll.objects.get_or_create(
                     user=user,
                     choreography=item.choreography,
@@ -136,12 +180,13 @@ class AcademyService:
                     }
                 )
             
-            # Guardamos los datos de facturación e información simulada en el usuario
             user.datos_facturacion_default = billing_info
             user.save()
 
-            # Marcamos el carrito como completado
+            # Guardamos los metadatos de la transacción en el carrito completado
             cart.state = 'completed'
+            cart.payment_method = payment_method
+            cart.idempotency_key = idempotency_key
             cart.save()
             
             return cart
