@@ -135,8 +135,20 @@ class CartCheckoutView(APIView):
         Cierra el carrito simulando el pago y otorgando el acceso inmediato.
         """
         billing_info = request.data.get('datos_facturacion', '')
+        payment_method = request.data.get('payment_method', None)
+        payment_data = request.data.get('payment_data', {})
+        
+        # Recupera la clave de idempotencia del header HTTP 'X-Idempotency-Key' o del cuerpo como respaldo
+        idempotency_key = request.headers.get('X-Idempotency-Key') or request.data.get('idempotency_key', None)
+        
         try:
-            cart = AcademyService.process_cart_checkout(request.user, billing_info)
+            cart = AcademyService.process_cart_checkout(
+                user=request.user,
+                billing_info=billing_info,
+                payment_method=payment_method,
+                payment_data=payment_data,
+                idempotency_key=idempotency_key
+            )
             serializer = ShoppingCartSerializer(cart)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValidationError as e:

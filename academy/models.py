@@ -173,6 +173,8 @@ class ShoppingCart(models.Model):
     )
     state = models.CharField('Estado del carrito', max_length=20, choices=STATES, default='pending')
     date = models.DateField('Fecha de actualización', auto_now=True)
+    idempotency_key = models.CharField('Clave de idempotencia', max_length=255, blank=True, null=True, unique=True)
+    payment_method = models.CharField('Método de pago', max_length=50, blank=True, null=True)
 
     def __str__(self):
         return f"Carrito {self.shopping_cart_id} - {self.user.email} ({self.state})"
