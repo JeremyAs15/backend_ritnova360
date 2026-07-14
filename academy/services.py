@@ -65,12 +65,20 @@ class AcademyService:
         """
         Elimina lógicamente una coreografía. Los accesos de estudiantes que ya la compraron
         no se ven afectados porque Enroll permanece intacto.
+        Retorna si la coreografía tenía ventas para que el frontend pueda informar al usuario.
         """
         if user.role != 'director' and choreography.creator_id != user.pk:
             raise PermissionDenied("Solo el creador de la coreografía o un director pueden eliminarla.")
 
+        enrollments_count = Enroll.objects.filter(choreography=choreography, state='active').count()
+
         choreography.is_active = False
         choreography.save(update_fields=['is_active'])
+
+        return {
+            'has_sales': enrollments_count > 0,
+            'enrollments_count': enrollments_count,
+        }
 
     @staticmethod
     def add_choreography_to_cart(user, choreography_id: int) -> AddTo:
