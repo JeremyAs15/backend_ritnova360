@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Choreography, VideoClip, Rate, Enroll, ShoppingCart, AddTo
+from django.db.models import Avg
 
 class VideoClipSerializer(serializers.ModelSerializer):
     """
@@ -20,19 +21,34 @@ class ChoreographySerializer(serializers.ModelSerializer):
     video_clips = VideoClipSerializer(many=True, required=False)
     creator_name = serializers.SerializerMethodField()
     creator_email = serializers.EmailField(source='creator.email', read_only=True)
+    rating = serializers.SerializerMethodField()
+    students_count = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
 
     def get_creator_name(self, obj):
         if obj.creator:
             return f"{obj.creator.first_name} {obj.creator.last_name}"
         return "Profesor"
+    
+    # Lógica para calcular los datos de la base de datos
+    def get_rating(self, obj):
+        average = obj.ratings.aggregate(Avg('score'))['score__avg']
+        return round(float(average), 1) if average else 0.0
+
+    def get_students_count(self, obj):
+        # Conteo de la tabla Enroll vinculada a esta coreografía
+        return obj.enrollments.filter(state='active').count()
+
+    def get_reviews_count(self, obj):
+        # Conteo de comentarios en la tabla Rate
+        return obj.ratings.count()
 
     class Meta:
         model = Choreography
         fields = [
             'choreography_id', 'song_name', 'genre', 'difficulty_level',
             'price', 'creator', 'creator_name', 'creator_email', 'creation_date', 'video_clips',
-            'thumbnail_url', 
-            'description'
+            'thumbnail_url', 'description', 'rating', 'students_count', 'reviews_count'
         ]
         read_only_fields = ['choreography_id', 'creation_date', 'creator']
 
