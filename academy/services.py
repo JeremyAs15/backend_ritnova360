@@ -307,11 +307,12 @@ class AcademyService:
                     'usuarios_internos': User.objects.filter(
                         role__in=['admin', 'director', 'teacher'], is_active=True
                     ).count(),
-                    'total_coreografias': Choreography.objects.count(),
+                    'total_coreografias': Choreography.objects.filter(is_active=True).count(), 
                     'ventas_mes': Enroll.objects.filter(
                         date__month=now.month,
                         date__year=now.year,
-                        state='active'
+                        state='active',
+                        choreography__is_active=True # OPCIONAL: Solo contar ventas de coreos activas
                     ).count(),
                     'ingresos_mes': float(ingresos_mes),
                 },
@@ -377,7 +378,7 @@ class AcademyService:
             .annotate(cantidad=Count('id')) \
             .order_by('semana')
 
-            recomendaciones_qs = Choreography.objects.exclude(
+            recomendaciones_qs = Choreography.objects.filter(is_active=True).exclude(
                 choreography_id__in=coreografias_ids
             ).select_related('creator')
             if generos_usuario:

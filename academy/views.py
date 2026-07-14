@@ -36,7 +36,7 @@ class ChoreographyListView(APIView):
         queryset = Choreography.objects.filter(is_active=True).select_related('creator').prefetch_related('video_clips')
         
         user_only = request.query_params.get('user_only') == 'true'
-        if user_only and request.user.is_authenticated:
+        if user_only and request.user.is_authenticated and request.user.role == 'teacher':
             queryset = queryset.filter(creator=request.user)
 
         genre = request.query_params.get('genre')
